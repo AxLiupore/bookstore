@@ -7,6 +7,7 @@ import (
 	"bookstore/pkg/utils"
 	"bookstore/serializer"
 	"context"
+	"mime/multipart"
 )
 
 type UserService struct {
@@ -110,5 +111,73 @@ func (service *UserService) Login(ctx context.Context) serializer.Response {
 			User:  serializer.BuildUser(user),
 			Token: token,
 		},
+	}
+}
+
+func (service *UserService) Update(ctx context.Context, id uint) serializer.Response {
+	var user *model.User
+	var err error
+	code := e.Success
+	// 找到这个用户
+	userDao := dao.NewUserDao(ctx)
+	user, err = userDao.GetUserById(id)
+	// 修改用户名
+	if service.Username != "" {
+		user.Username = service.Username
+	}
+	err = userDao.UpdateUserById(id, user)
+	if err != nil {
+		code = e.Error
+		return serializer.Response{
+			Status: code,
+			Msg:    e.GetMsg(code),
+			Error:  err.Error(),
+		}
+	}
+	return serializer.Response{
+		Status: code,
+		Msg:    e.GetMsg(code),
+		Data:   serializer.BuildUser(user),
+	}
+}
+
+func (service *UserService) Post(ctx context.Context, id uint, file multipart.File, fileSize int64) serializer.Response {
+	code := e.Success
+	var user *model.User
+	var err error
+	userDao := dao.NewUserDao(ctx)
+	user, err = userDao.GetUserById(id)
+	if err != nil {
+		code = e.Error
+		return serializer.Response{
+			Status: code,
+			Msg:    e.GetMsg(code),
+			Error:  err.Error(),
+		}
+	}
+	// 保存图片到本地
+	path, err := UploadAvatarToLocalStatic(file, id, user.Username)
+	if err != nil {
+		code = e.ErrorUploadFail
+		return serializer.Response{
+			Status: code,
+			Msg:    e.GetMsg(code),
+			Error:  err.Error(),
+		}
+	}
+	user.Avatar = path
+	err = userDao.UpdateUserById(id, user)
+	if err != nil {
+		code = e.Error
+		return serializer.Response{
+			Status: code,
+			Msg:    e.GetMsg(code),
+			Error:  err.Error(),
+		}
+	}
+	return serializer.Response{
+		Status: code,
+		Msg:    e.GetMsg(code),
+		Data:   serializer.BuildUser(user),
 	}
 }

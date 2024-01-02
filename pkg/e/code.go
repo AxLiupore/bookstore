@@ -9,4 +9,6 @@ const (
 	ErrorExistsUserNotFound = 30003
 	ErrorNotCompare         = 30004
 	ErrorAuthToken          = 30005
+	ErrorAuthCheckToken     = 30006
+	ErrorUploadFail         = 30007
 )
