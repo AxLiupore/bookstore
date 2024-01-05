@@ -37,7 +37,7 @@ func DirExistOrNot(fileAddr string) bool {
 
 // CreateDir 创建文件夹
 func CreateDir(dirName string) bool {
-	if err := os.MkdirAll(dirName, 755); err != nil {
+	if err := os.MkdirAll(dirName, 0755); err != nil {
 		return false
 	}
 	return true

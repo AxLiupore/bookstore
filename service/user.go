@@ -1,19 +1,28 @@
 package service
 
 import (
+	"bookstore/conf"
 	"bookstore/dao"
 	"bookstore/model"
 	"bookstore/pkg/e"
 	"bookstore/pkg/utils"
 	"bookstore/serializer"
 	"context"
+	"gopkg.in/mail.v2"
 	"mime/multipart"
+	"strings"
 )
 
 type UserService struct {
 	Username string `json:"username" form:"username"`
 	Password string `json:"password" form:"password"`
 	Key      string `json:"key" form:"key"` // 前端验证
+}
+
+type SendEmailService struct {
+	Email         string `json:"email" form:"email"`
+	Password      string `json:"password" form:"password"`
+	OperationType uint   `json:"operation_type" form:"operation_type"` // 1：绑定邮箱 2：解绑邮箱 3：改密码
 }
 
 func (service *UserService) Register(ctx context.Context) serializer.Response {
@@ -179,5 +188,52 @@ func (service *UserService) Post(ctx context.Context, id uint, file multipart.Fi
 		Status: code,
 		Msg:    e.GetMsg(code),
 		Data:   serializer.BuildUser(user),
+	}
+}
+
+func (service *SendEmailService) Send(ctx context.Context, id uint) serializer.Response {
+	code := e.Success
+	var address string
+	var notice *model.Notice // 绑定邮箱，修改密码，模板通知
+	token, err := utils.GenerateEmailToken(id, service.Email, service.Password, service.OperationType, 0)
+	if err != nil {
+		code = e.ErrorAuthToken
+		return serializer.Response{
+			Status: code,
+			Msg:    e.GetMsg(code),
+			Error:  err.Error(),
+		}
+	}
+	noticeDao := dao.NewNoticeDao(ctx)
+	notice, err = noticeDao.GetNoticeById(service.OperationType)
+	if err != nil {
+		code = e.Error
+		return serializer.Response{
+			Status: code,
+			Msg:    e.GetMsg(code),
+			Error:  err.Error(),
+		}
+	}
+	address = conf.ValidEmail + token // 发送方
+	mailStr := notice.Text
+	mailText := strings.Replace(mailStr, "邮箱", address, -1)
+	m := mail.NewMessage()
+	m.SetHeader("From", conf.SmtpEmail)
+	m.SetHeader("To", service.Email)
+	m.SetHeader("Subject", "AxLiu")
+	m.SetBody("text/html", mailText)
+	d := mail.NewDialer(conf.SmtpHost, 465, conf.SmtpEmail, conf.SmtpPass)
+	d.StartTLSPolicy = mail.MandatoryStartTLS
+	if err = d.DialAndSend(m); err != nil {
+		code = e.ErrorSendEmail
+		return serializer.Response{
+			Status: code,
+			Msg:    e.GetMsg(code),
+			Error:  err.Error(),
+		}
+	}
+	return serializer.Response{
+		Status: code,
+		Msg:    e.GetMsg(code),
 	}
 }

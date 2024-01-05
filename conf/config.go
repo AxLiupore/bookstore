@@ -23,9 +23,9 @@ var (
 	RedisDbName string
 
 	ValidEmail string
-	SmtHost    string
-	SmtEmail   string
-	SmtPass    string
+	SmtpHost   string
+	SmtpEmail  string
+	SmtpPass   string
 
 	Host        string
 	ProductPath string
@@ -73,9 +73,9 @@ func LoadRedis(file *ini.File) {
 
 func LoadEmail(file *ini.File) {
 	ValidEmail = file.Section("email").Key("ValidEmail").String()
-	SmtEmail = file.Section("email").Key("SmtEmail").String()
-	SmtHost = file.Section("email").Key("SmtHost").String()
-	SmtPass = file.Section("email").Key("SmtPass").String()
+	SmtpEmail = file.Section("email").Key("SmtpEmail").String()
+	SmtpHost = file.Section("email").Key("SmtpHost").String()
+	SmtpPass = file.Section("email").Key("SmtpPass").String()
 }
 
 func LoadPhotoPath(file *ini.File) {

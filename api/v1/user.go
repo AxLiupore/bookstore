@@ -51,3 +51,14 @@ func UploadAvatar(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, err)
 	}
 }
+
+func SendEmail(c *gin.Context) {
+	var sendEmail service.SendEmailService
+	claims, _ := utils.ParseToken(c.GetHeader("Authorization"))
+	if err := c.ShouldBind(&sendEmail); err == nil {
+		res := sendEmail.Send(c, claims.Id)
+		c.JSON(http.StatusOK, res)
+	} else {
+		c.JSON(http.StatusBadRequest, err)
+	}
+}
